@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 
 
-def nothing(x):
+def nothing():
     pass
 
 
@@ -57,10 +57,12 @@ class SegmentHSV(object):
                 _, image = self.capture.read()
             elif self.image_src == 'image':
                 image = self.capture
+            # figure 1 (Input)
             shown_fig.append(image)
 
             # convert color from RGB to HSV format
             hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            # figure 2 (HSV)
             shown_fig.append(hsv)
 
             # read params
@@ -80,21 +82,26 @@ class SegmentHSV(object):
             else:
                 self.trackbar[:] = (np.array(hsv_set[0:3]) + np.array(hsv_set[3:])) / 2
                 self.trackbar = cv2.cvtColor(self.trackbar, cv2.COLOR_HSV2BGR)
+            # figure 3 (Parameter)
             shown_fig.append(self.trackbar)
 
             # color filter
             lower_hsv_val = np.array(hsv_set[0:3])
             upper_hsv_val = np.array(hsv_set[3:])
             result_hsv = cv2.inRange(hsv, lower_hsv_val, upper_hsv_val)
+            # figure 4 (Mask)
             shown_fig.append(result_hsv)
 
             # image processing
             eroded_img = cv2.erode(result_hsv, erode_kernel)
             dilated_image = cv2.dilate(eroded_img, dilate_kernel)
+            # figure 5 (Transform)
             shown_fig.append(dilated_image)
             open_img = cv2.morphologyEx(dilated_image, cv2.MORPH_OPEN, self.rect_kernel(kernel_size[2]))
+            # figure 6 (Open)
             shown_fig.append(open_img)
             close_img = cv2.morphologyEx(open_img, cv2.MORPH_CLOSE, self.rect_kernel(kernel_size[3]))
+            # figure 7 (Close)
             shown_fig.append(close_img)
 
             # find contours
@@ -118,22 +125,24 @@ class SegmentHSV(object):
                 min_x, max_x = min(x, min_x), max(x + w, max_x)
                 min_y, max_y = min(y, min_y), max(y + h, max_y)
                 if w > 50 and h > 50:
-                    cv2.rectangle(output_img, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                    cv2.rectangle(output_img, (x, y), (x + w, y + h), (0, 0, 255), 3)
 
             if max_x - min_x > 0 and max_y - min_y > 0:
-                cv2.rectangle(output_img, (min_x, min_y), (max_x, max_y), (255, 0, 0), 2)
+                cv2.rectangle(output_img, (min_x, min_y), (max_x, max_y), (0, 0, 255), 3)
             if contours:
                 # show the total area of contour
                 cv2.putText(output_img, 'Area of interest : {}'.format(cv2.contourArea(contours[0])), (50, 100),
-                            cv2.FONT_HERSHEY_SIMPLEX, 3, (255, 0, 0), 8)
+                            cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 8)
+            # figure 8 (Output)
             shown_fig.append(output_img)
 
             # result/output display
             for i, win in enumerate(self.win_name):
                 cv2.imshow(win, shown_fig[i])
 
-            # wait until 'q' is touched
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            # wait until 'q' or 'Q' is touched
+            _key_val = cv2.waitKey(1)
+            if _key_val == ord('q') or _key_val == ord('Q'):
                 break
 
         # release capture and close all windows
